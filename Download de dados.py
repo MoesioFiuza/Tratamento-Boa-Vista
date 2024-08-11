@@ -1,18 +1,16 @@
 import pandas as pd
-import os
+import time
 
-menu = r'C:\Users\moesios\Desktop\DOWNLOAD DE DADOS\0_3_Menu.csv'
-domicilio = r'C:\Users\moesios\Desktop\DOWNLOAD DE DADOS\1_Dados_do_Domicílio.csv'
-morador = r'C:\Users\moesios\Desktop\DOWNLOAD DE DADOS\2_Morador.csv'
-deslocamento = r'C:\Users\moesios\Desktop\DOWNLOAD DE DADOS\3_Deslocamento.csv'
-logins = r'C:\Users\moesios\Desktop\DOWNLOAD DE DADOS\0_2_Logins.csv'
+start_time = time.time()
 
-menu_df = pd.read_csv(menu)
-domicilio_df = pd.read_csv(domicilio)
-morador_df = pd.read_csv(morador)
-deslocamento_df = pd.read_csv(deslocamento)
-logins_df = pd.read_csv(logins)
+# Define file paths
+menu = r'/home/moesiosf/Área de trabalho/TRATAMENTO/0_3_Menu.csv'
+domicilio = r'/home/moesiosf/Área de trabalho/TRATAMENTO/1_Dados_do_Domicílio.csv'
+morador = r'/home/moesiosf/Área de trabalho/TRATAMENTO/2_Morador.csv'
+deslocamento = r'/home/moesiosf/Área de trabalho/TRATAMENTO/3_Deslocamento.csv'
+logins = r'/home/moesiosf/Área de trabalho/TRATAMENTO/0_2_Logins.csv'
 
+# Define new column names
 novos_nomes_menu = {
     'P_0_1_1': 'DOMICÍLIO REGISTRADO NO APLICATIVO?',
     'P_0_1_2': 'NOME DO LOGRADOURO',
@@ -112,7 +110,6 @@ novos_nomes_morador = {
     'P_3_1': 'QUANTOS DESLOCAMENTOS VOCÊ FEZ ONTEM ?',
     'P_3_38': 'POR QUE VOCÊ NÃO FEZ NENHUM DESLOCAMENTO ONTEM ?',
     'P_3_39': 'OUTROS ?'
-
 }
 
 novos_nomes_deslocamento = {
@@ -151,23 +148,23 @@ novos_nomes_deslocamento = {
     'P_3_27': 'FORMA DE PAGAMENTO',
     'P_3_28': 'ONDE VOCÊ ESTACIONOU NO LOCAL DE DESTINO ?',
     'P_3_31': 'COMENTÁRIOS',
-
 }
 
-def renomear_colunas(df, novos_nomes):
-    return df.rename(columns=novos_nomes)
+# Read CSV files and rename columns
+menu_df = pd.read_csv(menu).rename(columns=novos_nomes_menu)
+domicilio_df = pd.read_csv(domicilio).rename(columns=novos_nomes_domicilio)
+morador_df = pd.read_csv(morador).rename(columns=novos_nomes_morador)
+deslocamento_df = pd.read_csv(deslocamento).rename(columns=novos_nomes_deslocamento)
 
-menu_df = renomear_colunas(menu_df, novos_nomes_menu)
-domicilio_df = renomear_colunas(domicilio_df, novos_nomes_domicilio)
-morador_df = renomear_colunas(morador_df, novos_nomes_morador)
-deslocamento_df = renomear_colunas(deslocamento_df, novos_nomes_deslocamento)
-
-caminho_saida = r'C:\Users\moesios\Desktop\DOWNLOAD DE DADOS\BD.xlsx'
-
-with pd.ExcelWriter(caminho_saida, engine='xlsxwriter') as writer:
+# Write to Excel
+caminho_saida = r'/home/moesiosf/Área de trabalho/TRATAMENTO/BD.xlsx'
+with pd.ExcelWriter(caminho_saida, engine='openpyxl') as writer:
     menu_df.to_excel(writer, sheet_name='MENU', index=False)
     domicilio_df.to_excel(writer, sheet_name='DOMICÍLIO', index=False)
     morador_df.to_excel(writer, sheet_name='MORADOR', index=False)
     deslocamento_df.to_excel(writer, sheet_name='DESLOCAMENTO', index=False)
-    
-print("DEU CERTO")
+
+end_time = time.time()
+execution_time = end_time - start_time
+
+print(execution_time)
