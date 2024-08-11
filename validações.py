@@ -1,43 +1,41 @@
 import pandas as pd
+import time
 
-planilha = r'C:\Users\moesios\Desktop\DOWNLOAD DE DADOS\BD.xlsx'
-zonas = r'C:\Users\moesios\Desktop\DOWNLOAD DE DADOS\EnderecosDomiciliar_2401_01.xlsx'
-logins = r'C:\Users\moesios\Desktop\DOWNLOAD DE DADOS\0_2_Logins.csv'
+start_time = time.time()
 
-df_zonas = pd.read_excel(zonas, sheet_name='Domicilios')
+planilha = r'/home/moesiosf/Área de trabalho/TRATAMENTO/BD.xlsx'
+zonas = r'/home/moesiosf/Área de trabalho/TRATAMENTO/EnderecosDomiciliar_2401_01.xlsx'
+logins = r'/home/moesiosf/Área de trabalho/TRATAMENTO/0_2_Logins.csv'
+
+df_zonas = pd.read_excel(zonas, sheet_name='Domicilios', usecols=['IDENTIFICADOR DO DOMICÍLIO', 'ZONA', 'ENDEREÇO FORMATADO'])
 df_menu = pd.read_excel(planilha, sheet_name='MENU')
-df_logins = pd.read_csv(logins)
+df_logins = pd.read_csv(logins, usecols=['ID_LOGIN', 'Nome do App'])
 
-df_menu = df_menu.merge(df_zonas[['IDENTIFICADOR DO DOMICÍLIO', 'ZONA']], 
-                        how='left', 
-                        left_on='IDENTIFICADOR DO DOMICÍLIO', 
-                        right_on='IDENTIFICADOR DO DOMICÍLIO')
+df_menu = df_menu.merge(df_zonas[['IDENTIFICADOR DO DOMICÍLIO', 'ZONA']], how='left', on='IDENTIFICADOR DO DOMICÍLIO')
 
 df_menu['NÚMERO DO DOMICÍLIO'] = df_menu['NÚMERO DO DOMICÍLIO VIZINHO'].combine_first(df_menu['NÚMERO DO DOMICÍLIO'])
 df_menu['NÚMERO DO DOMICÍLIO'] = df_menu['NÚMERO DO DOMICÍLIO'].fillna(0).astype(int).astype(str)
 
-df_menu['ENDEREÇO CONCATENADO'] = (
-    df_menu['NOME DO LOGRADOURO'].astype(str) + ", " +
-    df_menu['NÚMERO DO DOMICÍLIO'] + ", " + 
-    df_menu['BAIRRO DO DOMICÍLIO'].astype(str) + " - " +
-    "BOA VISTA / RR"
-).str.upper()
+endereco_formatado_map = df_zonas.set_index('IDENTIFICADOR DO DOMICÍLIO')['ENDEREÇO FORMATADO'].to_dict()
 
+def get_endereco_concatenado(row):
+    if row['DOMICÍLIO REGISTRADO NO APLICATIVO?'] == 'SIM':
+        return endereco_formatado_map.get(row['IDENTIFICADOR DO DOMICÍLIO'], '')
+    else:
+        return (str(row['NOME DO LOGRADOURO']) + ", " +
+                row['NÚMERO DO DOMICÍLIO'] + ", " + 
+                str(row['BAIRRO DO DOMICÍLIO']) + " - " +
+                "BOA VISTA / RR").upper()
 
-df_menu = df_menu.merge(df_logins[['ID_LOGIN', 'Nome do App']], 
-                        how='left', 
-                        left_on='ID_LOGIN', 
-                        right_on='ID_LOGIN')
+df_menu['ENDEREÇO CONCATENADO'] = df_menu.apply(get_endereco_concatenado, axis=1)
 
+df_menu = df_menu.merge(df_logins, how='left', on='ID_LOGIN')
 df_menu.rename(columns={'Nome do App': 'Versão do APP'}, inplace=True)
 
-
 with pd.ExcelWriter(planilha, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-    for sheet_name in pd.ExcelFile(planilha).sheet_names:
-        if sheet_name != 'MENU':
-            pd.read_excel(planilha, sheet_name=sheet_name).to_excel(writer, sheet_name=sheet_name, index=False)
-    
     df_menu.to_excel(writer, sheet_name='MENU', index=False)
 
+end_time = time.time()
+execution_time = end_time - start_time
 
-print("DEU CERTO")    
+print(execution_time)
